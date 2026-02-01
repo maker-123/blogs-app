@@ -17,7 +17,7 @@ function App() {
         <Route path="/sign-up" element={<SignUp />} />
         <Route path="post" element={<ProtectedRoute />}>
           <Route index element={<PostList />} />
-          <Route path="new" element={<PostCreate />} />
+          <Route path="create" element={<PostCreate />} />
           <Route path=":id" element={<PostDetails />} />
           <Route path=":id/edit" element={<PostUpdate />} />
         </Route>
