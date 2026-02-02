@@ -15,6 +15,35 @@ const PostList = () => {
 
     getPosts();
   }, []);
+  const handleDelete = async (post: any) => {
+    const confirmDelete = window.confirm(
+      "Delete this post and its image permanently?",
+    );
+    if (!confirmDelete) return;
+
+    try {
+      if (post.image_url) {
+        const filePath = post.image_url.split("/").pop();
+        const { error: storageError } = await supabase.storage
+          .from("blog-images")
+          .remove([filePath]);
+
+        if (storageError) console.error("Storage error:", storageError.message);
+      }
+
+      const { data, error: dbError } = await supabase
+        .from("posts")
+        .delete()
+        .eq("id", post.id);
+
+      if (dbError) throw dbError;
+      console.log("Deleted post:", data);
+      console.log("Post and image deleted!");
+      setPosts(posts.filter((p) => p.id !== post.id));
+    } catch (error: any) {
+      alert(error.message);
+    }
+  };
 
   if (loading) return <div>Loading posts...</div>;
 
@@ -40,7 +69,10 @@ const PostList = () => {
           <button className="bg-blue-500 text-white px-2 py-1 rounded">
             Edit
           </button>
-          <button className="bg-red-500 text-white px-2 py-1 rounded ml-2">
+          <button
+            className="bg-red-500 text-white px-2 py-1 rounded ml-2"
+            onClick={() => handleDelete(post)}
+          >
             Delete
           </button>
         </div>
