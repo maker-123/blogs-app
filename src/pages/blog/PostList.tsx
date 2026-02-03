@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../services/supabaseClient";
+import CommentForm from "../../components/CommentsForm";
 
 const PostList = () => {
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-
+  const [activePostId, setActivePostId] = useState<string | null>(null);
   useEffect(() => {
     const getPosts = async () => {
       setLoading(true);
@@ -66,6 +67,25 @@ const PostList = () => {
             alt={post.title}
             className="w-64 h-64 object-cover"
           />
+          <button
+            onClick={() =>
+              setActivePostId(activePostId === post.id ? null : post.id)
+            }
+            className="bg-gray-500 text-white px-2 py-1 rounded mr-2"
+          >
+            {activePostId === post.id ? "Close" : "Comment"}
+          </button>
+          {activePostId === post.id && (
+            <div className="mt-4 p-4 bg-gray-100 rounded">
+              <CommentForm
+                postId={post.id}
+                onCommentAdded={() => {
+                  setActivePostId(null);
+                }}
+              />
+            </div>
+          )}
+
           <button className="bg-blue-500 text-white px-2 py-1 rounded">
             Edit
           </button>
