@@ -1,12 +1,9 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../services/supabaseClient";
-import CommentForm from "../../components/CommentsForm";
-import EditModal from "../../components/Editmodal";
-import { Post } from "../../types/blog.typs";
-
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faComment } from "@fortawesome/free-regular-svg-icons";
-import { faEllipsis } from "@fortawesome/free-solid-svg-icons";
+import { Post } from "../../types/blog.types";
+import PostCreate from "./PostCreate";
+import PostCard from "../../components/postCard";
+import PostUpdate from "../../components/Editmodal";
 
 const PostList = () => {
   const [posts, setPosts] = useState<any[]>([]);
@@ -14,22 +11,61 @@ const PostList = () => {
   const [activePostId, setActivePostId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+
+  const ITEMS_PER_PAGE = 1;
 
   const openEditModal = (post: Post) => {
     setSelectedPost(post);
     setIsModalOpen(true);
   };
 
-  useEffect(() => {
-    const getPosts = async () => {
-      setLoading(true);
-      const { data } = await supabase.from("posts").select("*");
-      if (data) setPosts(data);
-      setLoading(false);
-    };
+  const getPosts = async (pageNumber: number) => {
+    setLoading(true);
 
-    getPosts();
-  }, []);
+    const from = pageNumber * ITEMS_PER_PAGE;
+    const to = from + ITEMS_PER_PAGE - 1;
+
+    const { data, error } = await supabase
+      .from("posts")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .range(from, to);
+
+    if (error) {
+      console.error("Error fetching posts:", error.message);
+    } else if (data) {
+      if (pageNumber === 0) {
+        setPosts(data);
+      } else {
+        setPosts((prev) => {
+          const existingIds = new Set(prev.map((p) => p.id));
+          const newPosts = data.filter((p) => !existingIds.has(p.id));
+          return [...prev, ...newPosts];
+        });
+      }
+
+      if (data.length < ITEMS_PER_PAGE) {
+        setHasMore(false);
+      }
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    getPosts(page);
+  }, [page]);
+
+  const handleRefresh = () => {
+    if (page === 0) {
+      getPosts(0);
+    } else {
+      setPage(0);
+    }
+  };
+
   const handleDelete = async (post: any) => {
     const confirmDelete = window.confirm(
       "Delete this post and its image permanently?",
@@ -60,95 +96,77 @@ const PostList = () => {
     }
   };
 
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      console.error("Error logging out:", error.message);
+    } else {
+      window.location.href = "/";
+    }
+  };
+
   if (loading) return <div>Loading posts...</div>;
 
   return (
-    <div className="flex min-h-screen items-center justify-center py-12 px-4 sm:px-6 lg:px-8 ">
+    <div className="flex min-h-screen items-center justify-center  px-4 sm:px-6 lg:px-8 ">
+      <button
+        onClick={handleLogout}
+        className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition font-semibold absolute top-4 right-4"
+      >
+        Log Out
+      </button>
       <div className="w-full max-w-4xl px-6 py-12 lg:px-8 ">
         <h1 className="text-2xl font-bold mb-4 text-white">Blog Posts</h1>
-        <button
-          className="bg-green-500 text-white px-2 py-1 rounded mb-4"
-          onClick={() => (window.location.href = "/post/create")}
-        >
-          Create New Post
-        </button>
+
+        <div className="p-3 bg-white/5 backdrop-blur-sm rounded-lg border border-white/10 mb-3">
+          <button
+            onClick={() => setIsCreateOpen(true)}
+            className="w-full text-white hover:text-gray-300 border border-white/10 bg-white/5 backdrop-blur-sm rounded-lg px-4 py-2 text-left"
+          >
+            Whats on your mind, Alvin?
+          </button>
+        </div>
         <div className="flex flex-col gap-y-4">
           {posts.map((post) => (
-            <div
+            <PostCard
               key={post.id}
-              className="w-full max-w-4xl px-6 py-12 lg:px-8 bg-white rounded-lg shadow-md bg-white/5 backdrop-blur-sm border border-white/10"
-            >
-              <div className="flex justify-between items-center">
-                <h1 className="text-lg font-semibold text-white">
-                  {post.title}
-                </h1>
-                <button className="p-2 hover:bg-gray-700  rounded-full transition">
-                  <FontAwesomeIcon icon={faEllipsis} color="white" size="lg" />
-                </button>
-              </div>
-              {/*<p className="text-white">{post.body}</p>*/}
-              {/*<p>{post.caption}</p>*/}
-              <div className="border border-white/10 my-4 rounded-lg overflow-hidden">
-                <img
-                  src={post.image_url}
-                  alt={post.title}
-                  className="object-cover w-full "
-                />
-              </div>
-              <div>
-                <button
-                  onClick={() =>
-                    setActivePostId(activePostId === post.id ? null : post.id)
-                  }
-                  className=" text-white px-2 py-1 rounded hover:bg-gray-700 transition  w-full"
-                >
-                  <FontAwesomeIcon
-                    icon={faComment}
-                    color="white"
-                    className="mr-2"
-                  />
-                  {activePostId === post.id ? "Close" : "Comment"}
-                </button>
-                {activePostId === post.id && (
-                  <div className="">
-                    <CommentForm
-                      postId={post.id}
-                      onCommentAdded={() => {
-                        setActivePostId(null);
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
-
-              <button
-                onClick={() => openEditModal(post)}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition"
-              >
-                Edit Post
-              </button>
-
-              <button
-                className="bg-red-500 text-white px-2 py-1 rounded ml-2"
-                onClick={() => handleDelete(post)}
-              >
-                Delete
-              </button>
-            </div>
+              post={post}
+              activePostId={activePostId}
+              setActivePostId={setActivePostId}
+              onEdit={openEditModal}
+              onDelete={handleDelete}
+            />
           ))}
+
+          {hasMore && (
+            <button
+              onClick={() => {
+                setPage((prev) => prev + 1);
+              }}
+              disabled={loading}
+              className="mt-4 bg-gray-800 text-white py-2 rounded-lg hover:bg-gray-700 transition"
+            >
+              {loading ? "Loading..." : "Load More Posts"}
+            </button>
+          )}
           {isModalOpen && selectedPost && (
-            <EditModal
+            <PostUpdate
               post={selectedPost}
+              isOpen={isModalOpen}
               onClose={() => setIsModalOpen(false)}
-              onUpdate={(updatedPost) => {
-                setPosts(
-                  posts.map((p) => (p.id === updatedPost.id ? updatedPost : p)),
-                );
+              onPostUpdated={() => {
+                getPosts(0);
                 setIsModalOpen(false);
               }}
             />
           )}
         </div>
+        <PostCreate
+          isOpen={isCreateOpen}
+          onClose={() => setIsCreateOpen(false)}
+          onPostCreated={handleRefresh}
+        />
       </div>
     </div>
   );

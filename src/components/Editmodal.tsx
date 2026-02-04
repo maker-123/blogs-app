@@ -1,94 +1,162 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "../services/supabaseClient";
-import { Post } from "../types/blog.typs";
-interface EditModalProps {
-  post: Post;
+import { Post } from "../types/blog.types";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faTimes } from "@fortawesome/free-solid-svg-icons";
+
+interface PostUpdateProps {
+  isOpen: boolean;
   onClose: () => void;
-  onUpdate: (updatedPost: Post) => void;
+  onPostUpdated: () => void;
+  post: Post;
 }
 
-const EditModal = ({ post, onClose, onUpdate }: EditModalProps) => {
-  const [formData, setFormData] = useState({
-    title: post.title,
-    body: post.body,
-    caption: post.caption || "",
-  });
+const PostUpdate = ({
+  isOpen,
+  onClose,
+  onPostUpdated,
+  post,
+}: PostUpdateProps) => {
+  const [title, setTitle] = useState(post.title);
+  const [body, setBody] = useState(post.body);
+  const [caption, setCaption] = useState(post.caption || "");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  useEffect(() => {
+    setTitle(post.title);
+    setBody(post.body);
+    setCaption(post.caption || "");
+  }, [post]);
+
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(post.image_url);
+
+  const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = await supabase
-      .from("posts")
-      .update(formData)
-      .eq("id", post.id);
+    try {
+      let finalImageUrl = post.image_url;
 
-    if (error) {
-      alert(error.message);
-    } else {
-      onUpdate({ ...post, ...formData });
+      if (imageFile) {
+        if (post.image_url) {
+          const oldPath = post.image_url.split("/").pop();
+          await supabase.storage.from("blog-images").remove([oldPath!]);
+        }
+
+        const fileExt = imageFile.name.split(".").pop();
+        const filePath = `${Math.random()}.${fileExt}`;
+        await supabase.storage.from("blog-images").upload(filePath, imageFile);
+
+        const { data } = supabase.storage
+          .from("blog-images")
+          .getPublicUrl(filePath);
+        finalImageUrl = data.publicUrl;
+      }
+
+      const { error } = await supabase
+        .from("posts")
+        .update({ title, body, caption, image_url: finalImageUrl })
+        .eq("id", post.id);
+
+      if (error) throw error;
+      onPostUpdated();
       onClose();
+    } catch (error: any) {
+      alert(error.message);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
+  if (!isOpen) return null;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white w-full max-w-md rounded-xl shadow-2xl p-6 transform transition-all">
-        <div className="flex justify-between items-center mb-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+        <div className="flex items-center justify-between p-4 border-b">
           <h2 className="text-xl font-bold text-gray-800">Edit Post</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-gray-400 hover:text-gray-600 text-2xl"
           >
             &times;
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Title
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <input
+            className="w-full text-2xl font-bold border-none focus:ring-0 p-0"
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+          />
+
+          <textarea
+            className="w-full h-40 border-none focus:ring-0 resize-none p-0 text-lg"
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            required
+          />
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-semibold text-gray-600">
+              Change Photo
             </label>
             <input
-              className="mt-1 block w-full rounded-md border-gray-300 border p-2 focus:ring-blue-500 focus:border-blue-500"
-              value={formData.title}
-              onChange={(e) =>
-                setFormData({ ...formData, title: e.target.value })
-              }
-              required
+              type="file"
+              accept="image/*"
+              className="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  setImageFile(file);
+                  setPreview(URL.createObjectURL(file)); // Show preview
+                }
+              }}
             />
+            {preview && (
+              <div className="relative w-20 h-20">
+                <img
+                  src={preview}
+                  className="h-20 w-20 object-cover rounded mt-2"
+                  alt=""
+                />
+                <button
+                  type="button" // Important: prevents form submission
+                  onClick={() => {
+                    setPreview(null);
+                    setImageFile(null);
+                  }}
+                  className="absolute -top-1 -right-3 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition shadow-md"
+                >
+                  <FontAwesomeIcon icon={faTimes} size="xs" />
+                </button>
+              </div>
+            )}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Content
-            </label>
-            <textarea
-              className="mt-1 block w-full rounded-md border-gray-300 border p-2 h-32"
-              value={formData.body}
-              onChange={(e) =>
-                setFormData({ ...formData, body: e.target.value })
-              }
-              required
-            />
-          </div>
+          {/*<textarea
+            className="w-full border-none focus:ring-0 resize-none p-0 text-sm text-gray-500"
+            placeholder="Add a caption..."
+            value={caption}
+            onChange={(e) => setCaption(e.target.value)}
+          ></textarea>*/}
 
-          <div className="flex gap-3 mt-6">
+          <div className="flex justify-end gap-3 pt-4 border-t">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
+              className="px-6 py-2 font-semibold text-gray-600 hover:bg-gray-100 rounded-lg"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+              className="px-6 py-2 font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
             >
-              {loading ? "Saving..." : "Save Changes"}
+              {loading ? "Saving..." : "Update Post"}
             </button>
           </div>
         </form>
@@ -96,4 +164,5 @@ const EditModal = ({ post, onClose, onUpdate }: EditModalProps) => {
     </div>
   );
 };
-export default EditModal;
+
+export default PostUpdate;

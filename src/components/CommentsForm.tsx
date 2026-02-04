@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../services/supabaseClient";
-import { Comment } from "../types/blog.typs";
+import { Comment } from "../types/blog.types";
 
 interface Props {
   postId: string;
@@ -30,7 +30,7 @@ const CommentForm = ({ postId, onCommentAdded }: Props) => {
 
   useEffect(() => {
     fetchComments();
-  }, [postId]);
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,7 +51,7 @@ const CommentForm = ({ postId, onCommentAdded }: Props) => {
   };
 
   return (
-    <div className="comment-section">
+    <div className="comment-section text-white">
       <h3>Comments</h3>
 
       <div className="space-y-4">
@@ -70,7 +70,7 @@ const CommentForm = ({ postId, onCommentAdded }: Props) => {
           value={newComment}
           onChange={(e) => setNewComment(e.target.value)}
           placeholder="Write a comment..."
-          className="w-full p-2 border rounded"
+          className="w-full p-2 border rounded text-black"
           required
         />
         <button
