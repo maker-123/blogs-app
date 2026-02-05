@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../services/supabaseClient";
-import { Post } from "../../types/blog.types";
+import { Post, UserProfile } from "../../types/blog.types";
 import PostCreate from "./PostCreate";
 import PostCard from "../../components/postCard";
 import PostUpdate from "../../components/Editmodal";
+import Spinner from "../../components/Spinner";
+import SkeletonCard from "../../components/SkeletonCard";
 
 const PostList = () => {
   const [posts, setPosts] = useState<any[]>([]);
@@ -15,7 +17,32 @@ const PostList = () => {
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
 
-  const ITEMS_PER_PAGE = 1;
+  const [user, setCurrentUser] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    const fetchUserAndProfile = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (user) {
+        const { data: profile, error } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .single();
+
+        if (!error && profile) {
+          setCurrentUser({ ...user, profile });
+        }
+      } else {
+        setCurrentUser(null);
+      }
+    };
+
+    fetchUserAndProfile();
+  }, []);
+  const ITEMS_PER_PAGE = 5;
 
   const openEditModal = (post: Post) => {
     setSelectedPost(post);
@@ -30,10 +57,18 @@ const PostList = () => {
 
     const { data, error } = await supabase
       .from("posts")
-      .select("*")
+      .select(
+        `
+      *,
+      profiles (
+        full_name,
+        avatar_url,
+        username
+      )
+    `,
+      )
       .order("created_at", { ascending: false })
       .range(from, to);
-
     if (error) {
       console.error("Error fetching posts:", error.message);
     } else if (data) {
@@ -106,8 +141,6 @@ const PostList = () => {
     }
   };
 
-  if (loading) return <div>Loading posts...</div>;
-
   return (
     <div className="flex min-h-screen items-center justify-center  px-4 sm:px-6 lg:px-8 ">
       <button
@@ -124,21 +157,30 @@ const PostList = () => {
             onClick={() => setIsCreateOpen(true)}
             className="w-full text-white hover:text-gray-300 border border-white/10 bg-white/5 backdrop-blur-sm rounded-lg px-4 py-2 text-left"
           >
-            Whats on your mind, Alvin?
+            Whats on your mind, {user?.profile?.full_name || "guest"}?
           </button>
         </div>
         <div className="flex flex-col gap-y-4">
-          {posts.map((post) => (
-            <PostCard
-              key={post.id}
-              post={post}
-              activePostId={activePostId}
-              setActivePostId={setActivePostId}
-              onEdit={openEditModal}
-              onDelete={handleDelete}
-            />
-          ))}
+          {loading && posts.length === 0 ? (
+            <>
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+            </>
+          ) : (
+            posts.map((post) => (
+              <PostCard
+                key={post.id}
+                post={post}
+                activePostId={activePostId}
+                setActivePostId={setActivePostId}
+                onEdit={openEditModal}
+                onDelete={handleDelete}
+              />
+            ))
+          )}
 
+          {loading && posts.length > 0 && <Spinner />}
           {hasMore && (
             <button
               onClick={() => {

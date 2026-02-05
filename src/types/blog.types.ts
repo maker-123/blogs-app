@@ -28,6 +28,16 @@ export interface Comment {
 
   profiles?: Profile;
 }
-
+export type UserProfile = {
+  id: string;
+  email?: string;
+  profile: {
+    full_name?: string;
+    avatar_url?: string;
+    username?: string;
+    [key: string]: any;
+  };
+  [key: string]: any;
+};
 export type PostInsert = Omit<Post, "id" | "created_at" | "updated_at">;
 export type CommentInsert = Omit<Comment, "id" | "created_at">;

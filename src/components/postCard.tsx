@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faComment } from "@fortawesome/free-regular-svg-icons";
 import { faEllipsis } from "@fortawesome/free-solid-svg-icons";
 import CommentForm from "./CommentsForm";
-import { Post } from "../types/blog.types";
+import { Post, UserProfile } from "../types/blog.types";
 import { formatDistanceToNow } from "date-fns/formatDistanceToNow";
+import { supabase } from "../services/supabaseClient";
+import { Link } from "react-router-dom";
 
 interface PostCardProps {
   post: Post;
@@ -22,7 +24,31 @@ const PostCard = ({
   onDelete,
 }: PostCardProps) => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [user, setCurrentUser] = useState<UserProfile | null>(null);
 
+  useEffect(() => {
+    const fetchUserAndProfile = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (user) {
+        const { data: profile, error } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .single();
+
+        if (!error && profile) {
+          setCurrentUser({ ...user, profile });
+        }
+      } else {
+        setCurrentUser(null);
+      }
+    };
+
+    fetchUserAndProfile();
+  }, []);
   function formatDate(dateString: string) {
     const date = new Date(dateString);
     return formatDistanceToNow(date, { addSuffix: true });
@@ -31,22 +57,23 @@ const PostCard = ({
   return (
     <div className="w-full max-w-4xl px-6 pt-6 pb-4 lg:px-8 bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg shadow-md">
       <div className="flex justify-between items-center">
-        <h1 className="text-lg font-semibold text-white">
-          {post.title}{" "}
-          <span className="text-sm font-normal text-white/50 ml-2">
-            {formatDate(post.created_at)}
-          </span>
-        </h1>
+        <Link to={`/post/${post.id}`}>
+          <h2 className="text-lg font-semibold hover:text-blue-400 text-white transition cursor-pointer">
+            {post.title}
+          </h2>
+        </Link>
 
         <div className="relative">
-          <button
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="p-2 hover:bg-gray-700 rounded-full transition"
-          >
-            <FontAwesomeIcon icon={faEllipsis} color="white" size="lg" />
-          </button>
+          {user && user.id === post.user_id && (
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="p-2 hover:bg-gray-700 rounded-full transition"
+            >
+              <FontAwesomeIcon icon={faEllipsis} color="white" size="lg" />
+            </button>
+          )}
 
-          {menuOpen && (
+          {user && user.id === post.user_id && menuOpen && (
             <>
               <div
                 className="fixed inset-0 z-10"
@@ -76,7 +103,10 @@ const PostCard = ({
           )}
         </div>
       </div>
-
+      <span className="text-sm font-normal text-white/50 ">
+        Posted by {post.profiles?.full_name || "Unknown User"} •{" "}
+        {formatDate(post.created_at)}
+      </span>
       <p className="text-white mt-2">{post.body}</p>
 
       {post.image_url && (
