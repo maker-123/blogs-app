@@ -52,7 +52,7 @@ const CommentForm = ({ postId, onCommentAdded }: Props) => {
 
   return (
     <div className="comment-section text-white">
-      <h3>Comments</h3>
+      <h3 className="mb-2">Comments</h3>
 
       <div className="space-y-4">
         {comments.map((c) => (
@@ -60,7 +60,17 @@ const CommentForm = ({ postId, onCommentAdded }: Props) => {
             <p className="text-sm font-bold">
               {c.profiles?.full_name || "Anonymous"}
             </p>
-            <p>{c.content}</p>
+            <div className="flex items-center gap-2 py-1">
+              <img
+                src={c.profiles?.avatar_url || ""}
+                alt={c.content}
+                className="w-5  h-5 rounded-full object-cover"
+              />
+              <span className="text-sm font-normal text-white/50 ">
+                Posted by {c.profiles?.full_name || "Unknown User"}
+              </span>
+            </div>
+            <p className="mb-2">{c.content}</p>
           </div>
         ))}
       </div>

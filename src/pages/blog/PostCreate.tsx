@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { supabase } from "../../services/supabaseClient";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTimes } from "@fortawesome/free-solid-svg-icons";
@@ -16,6 +16,7 @@ const PostCreate = ({ isOpen, onClose, onPostCreated }: PostCreateProps) => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const uploadImage = async (file: File) => {
     const fileExt = file.name.split(".").pop();
@@ -63,6 +64,39 @@ const PostCreate = ({ isOpen, onClose, onPostCreated }: PostCreateProps) => {
       setLoading(false);
     }
   };
+
+  const MAX_FILE_SIZE = 2 * 1024 * 1024;
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+
+    if (!file) return;
+
+    if (file.size > MAX_FILE_SIZE) {
+      alert("File is too large! Please choose an image under 2MB.");
+      e.target.value = "";
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      alert("Invalid file type. Please upload an image.");
+      e.target.value = "";
+      return;
+    }
+
+    setImageFile(file);
+    setPreview(URL.createObjectURL(file));
+  };
+  const handleRemoveImage = () => {
+    if (preview) URL.revokeObjectURL(preview);
+    setPreview(null);
+    setImageFile(null);
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -87,20 +121,24 @@ const PostCreate = ({ isOpen, onClose, onPostCreated }: PostCreateProps) => {
             placeholder="Post Title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            maxLength={50}
             required
           />
+          <p className="text-sm text-gray-500">{title.length}/50</p>
           <textarea
             className="w-full h-40 border-none focus:ring-0 resize-none p-0 text-lg"
             placeholder="Write your content..."
             value={body}
+            maxLength={200}
             onChange={(e) => setBody(e.target.value)}
             required
           />
+          <p className="text-sm text-gray-500">{body.length}/200</p>
           <div className="flex flex-col gap-2">
             <label className="text-sm font-semibold text-gray-600">
               Attachment
             </label>
-            <input
+            {/*<input
               type="file"
               accept="image/*"
               className="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
@@ -108,6 +146,16 @@ const PostCreate = ({ isOpen, onClose, onPostCreated }: PostCreateProps) => {
                 setImageFile(e.target.files ? e.target.files[0] : null);
                 setPreview(URL.createObjectURL(e.target.files?.[0] as File));
               }}
+            />*/}
+            <input
+              type="file"
+              ref={fileInputRef} // Add the ref here
+              accept="image/png, image/jpeg"
+              className="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 
+             file:rounded-full file:border-0 file:text-sm 
+             file:font-semibold file:bg-blue-50 file:text-blue-700 
+             hover:file:bg-blue-100 cursor-pointer"
+              onChange={handleFileChange}
             />
             {preview && (
               <div className="relative w-20 h-20">
@@ -117,10 +165,9 @@ const PostCreate = ({ isOpen, onClose, onPostCreated }: PostCreateProps) => {
                   alt=""
                 />
                 <button
-                  type="button" // Important: prevents form submission
+                  type="button"
                   onClick={() => {
-                    setPreview(null);
-                    setImageFile(null);
+                    handleRemoveImage();
                   }}
                   className="absolute -top-1 -right-3 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition shadow-md"
                 >

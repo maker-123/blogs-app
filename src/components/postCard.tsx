@@ -25,6 +25,7 @@ const PostCard = ({
 }: PostCardProps) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [user, setCurrentUser] = useState<UserProfile | null>(null);
+  const [showMore, setShowMore] = useState(false);
 
   useEffect(() => {
     const fetchUserAndProfile = async () => {
@@ -53,15 +54,32 @@ const PostCard = ({
     const date = new Date(dateString);
     return formatDistanceToNow(date, { addSuffix: true });
   }
+  const PostTitle = ({ title }: { title: string }) => {
+    const limit = 50;
+    const displayTitle =
+      title.length > limit ? title.slice(0, limit) + "..." : title;
+
+    return (
+      <h2 className="text-lg font-semibold hover:text-blue-400 text-white transition cursor-pointer ">
+        {displayTitle}
+      </h2>
+    );
+  };
+  const PostBody = ({ body }: { body: string }) => {
+    const limit = 200;
+    if (showMore) {
+      return <p className="text-white">{body}</p>;
+    }
+    const displayBody =
+      body.length > limit ? body.slice(0, limit) + "..." : body;
+
+    return <p className="text-white">{displayBody}</p>;
+  };
 
   return (
     <div className="w-full max-w-4xl px-6 pt-6 pb-4 lg:px-8 bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg shadow-md">
       <div className="flex justify-between items-center">
-        <Link to={`/post/${post.id}`}>
-          <h2 className="text-lg font-semibold hover:text-blue-400 text-white transition cursor-pointer">
-            {post.title}
-          </h2>
-        </Link>
+        <Link to={`/post/${post.id}`}>{PostTitle({ title: post.title })}</Link>
 
         <div className="relative">
           {user && user.id === post.user_id && (
@@ -103,12 +121,26 @@ const PostCard = ({
           )}
         </div>
       </div>
-      <span className="text-sm font-normal text-white/50 ">
-        Posted by {post.profiles?.full_name || "Unknown User"} •{" "}
-        {formatDate(post.created_at)}
-      </span>
-      <p className="text-white mt-2">{post.body}</p>
-
+      <div className="flex items-center gap-2 py-3">
+        <img
+          src={post.profiles?.avatar_url || ""}
+          alt={post.title}
+          className="w-5  h-5 rounded-full object-cover"
+        />
+        <span className="text-sm font-normal text-white/50 ">
+          Posted by {post.profiles?.full_name || "Unknown User"} •{" "}
+          {formatDate(post.created_at)}
+        </span>
+      </div>
+      {PostBody({ body: post.body })}
+      {post.body.length > 200 && (
+        <button
+          onClick={() => setShowMore(!showMore)}
+          className="text-sm text-blue-400 hover:underline mt-2"
+        >
+          {showMore ? "Show Less" : "Read More"}
+        </button>
+      )}
       {post.image_url && (
         <div className="border border-white/10 my-4 rounded-lg overflow-hidden">
           <img
