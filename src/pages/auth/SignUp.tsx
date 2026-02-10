@@ -169,23 +169,6 @@ const SignUp = () => {
         </div>
       </div>
     </div>
-    //<div className="p-4">
-    //  <form onSubmit={handleSignUp}>
-    //    <input
-    //      type="email"
-    //      placeholder="Email"
-    //      onChange={(e) => setEmail(e.target.value)}
-    //    />
-    //    <input
-    //      type="password"
-    //      placeholder="Password"
-    //      onChange={(e) => setPassword(e.target.value)}
-    //      id="checkbox"
-    //    />
-    //    <input type="checkbox" onClick={showpassword} />
-    //    <button type="submit">Sign Up</button>
-    //  </form>
-    //</div>
   );
 };
 
