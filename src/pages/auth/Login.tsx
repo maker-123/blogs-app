@@ -39,7 +39,7 @@ const Login = () => {
       <div className="  w-96  justify-center px-6 py-12 lg:px-8 bg-white rounded-lg shadow-md bg-white/5 backdrop-blur-sm border border-white/10">
         <div className="flex flex-col items-center">
           <h2 className=" text-center text-2xl/9 font-bold tracking-tight text-white">
-            Login
+            blog
           </h2>
         </div>
 
