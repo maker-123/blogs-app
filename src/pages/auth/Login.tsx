@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../../services/supabaseClient";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faGoogle } from "@fortawesome/free-brands-svg-icons";
 
 const Login = () => {
   const [email, setEmail] = useState("tesadoalvin8@gmail.com");
@@ -101,11 +103,7 @@ const Login = () => {
                 onClick={handleGoogleLogin}
                 className="flex w-full justify-center items-center gap-2 rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-gray-900 hover:bg-gray-200 transition-colors"
               >
-                <img
-                  src="https://www.gstatic.com"
-                  alt="Google"
-                  className="w-4 h-4"
-                />
+                <FontAwesomeIcon icon={faGoogle}></FontAwesomeIcon>
                 Sign in with Google
               </button>
             </div>
