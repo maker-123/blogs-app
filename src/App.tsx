@@ -7,6 +7,8 @@ import PostDetails from "./pages/blog/PostDetails";
 import SignUp from "./pages/auth/SignUp";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PageNotFound from "./pages/PageNotFound";
+import PostListpagination from "./pages/blog/postlistPagination";
+
 function App() {
   return (
     <div className="">
@@ -17,6 +19,7 @@ function App() {
           <Route index element={<PostList />} />
           <Route path=":id" element={<PostDetails />} />
         </Route>
+        <Route path="/page/:page" element={<PostListpagination />} />
         <Route path="*" element={<PageNotFound />}></Route>
       </Routes>
     </div>
