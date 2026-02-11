@@ -21,7 +21,17 @@ const Login = () => {
       navigate("/post");
     }
   };
+  const handleGoogleLogin = async () => {
+    const siteUrl = process.env.localhost || window.location.origin;
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${siteUrl}/post`,
+      },
+    });
 
+    if (error) alert(error.message);
+  };
   return (
     <div className="flex min-h-screen items-center justify-center py-12 px-4 sm:px-6 lg:px-8 ">
       <div className="  w-96  justify-center px-6 py-12 lg:px-8 bg-white rounded-lg shadow-md bg-white/5 backdrop-blur-sm border border-white/10">
@@ -80,9 +90,23 @@ const Login = () => {
             <div>
               <button
                 type="submit"
-                className="flex w-full justify-center rounded-md bg-indigo-500 px-3 py-1.5 text-sm/6 font-semibold text-white hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+                className="mb-3 flex w-full justify-center rounded-md bg-indigo-500 px-3 py-1.5 text-sm/6 font-semibold text-white hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
               >
                 Sign in
+              </button>
+
+              {/* NEW GOOGLE BUTTON */}
+              <button
+                type="button" // Important: type="button" so it doesn't trigger handleLogin
+                onClick={handleGoogleLogin}
+                className="flex w-full justify-center items-center gap-2 rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-gray-900 hover:bg-gray-200 transition-colors"
+              >
+                <img
+                  src="https://www.gstatic.com"
+                  alt="Google"
+                  className="w-4 h-4"
+                />
+                Sign in with Google
               </button>
             </div>
             <div>
