@@ -7,6 +7,7 @@ import PostDetails from "./pages/blog/PostDetails";
 import SignUp from "./pages/auth/SignUp";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PageNotFound from "./pages/PageNotFound";
+import AuthCallback from "./components/CallbackComponent";
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/sign-up" element={<SignUp />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="post" element={<ProtectedRoute />}>
           <Route index element={<PostList />} />
           <Route path=":id" element={<PostDetails />} />

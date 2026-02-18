@@ -24,11 +24,12 @@ const Login = () => {
     }
   };
   const handleGoogleLogin = async () => {
-    const siteUrl = process.env.localhost || window.location.origin;
+    //const siteUrl = process.env.localhost || window.location.origin;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${siteUrl}/post`,
+        //redirectTo: `${siteUrl}/post`,
+        redirectTo: `${window.location.origin}/auth/callback`,
       },
     });
 
